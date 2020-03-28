@@ -90,10 +90,18 @@ where
             encodings
                 .as_ref()
                 .iter()
-                // Find encodings with a ROOT telation...
+                // Find encodings with a root relation...
                 .filter(|e| e.encoding().label() == ROOT_RELATION)
-                // ...that can be decoded.
-                .filter_map(|e| decode_fun(idx + 1, e.encoding()).map(|triple| (triple, e.prob())))
+                // ...that can be decoded and attaches to the root.
+                .filter_map(|e| {
+                    let triple = decode_fun(idx + 1, e.encoding())?;
+
+                    if triple.head() == 0 {
+                        Some((triple, e.prob()))
+                    } else {
+                        None
+                    }
+                })
                 .next()
         })
         .max_by_key(|(_, prob)| OrderedFloat(*prob))
