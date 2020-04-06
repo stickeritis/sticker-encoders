@@ -1,7 +1,6 @@
 use std::hash::Hash;
 use std::marker::PhantomData;
 
-use conllu::graph::Sentence;
 use failure::Error;
 use numberer::Numberer;
 use serde_derive::{Deserialize, Serialize};
@@ -122,17 +121,13 @@ where
     }
 }
 
-impl<D, M> CategoricalEncoder<D, D::Encoding, M>
+impl<D, M, E> CategoricalEncoder<D, E, M>
 where
-    D: SentenceDecoder,
-    D::Encoding: Clone + Eq + Hash + ToOwned,
-    M: mutability::Number<D::Encoding>,
+    E: Clone + Eq + Hash + ToOwned,
+    M: mutability::Number<E>,
 {
     /// Decode without applying the inner decoder.
-    pub fn decode_without_inner<S>(
-        &self,
-        labels: &[S],
-    ) -> Result<Vec<Vec<EncodingProb<D::Encoding>>>, Error>
+    pub fn decode_without_inner<S>(&self, labels: &[S]) -> Result<Vec<Vec<EncodingProb<E>>>, Error>
     where
         S: AsRef<[EncodingProb<usize>]>,
     {
@@ -170,15 +165,15 @@ where
     }
 }
 
-impl<E, M> SentenceEncoder for CategoricalEncoder<E, E::Encoding, M>
+impl<L, E, M> SentenceEncoder<L> for CategoricalEncoder<E, E::Encoding, M>
 where
-    E: SentenceEncoder,
+    E: SentenceEncoder<L>,
     E::Encoding: Clone + Eq + Hash,
     M: mutability::Number<E::Encoding>,
 {
     type Encoding = usize;
 
-    fn encode(&self, sentence: &Sentence) -> Result<Vec<Self::Encoding>, Error> {
+    fn encode(&self, sentence: &L) -> Result<Vec<Self::Encoding>, Error> {
         let encoding = self.inner.encode(sentence)?;
         let categorical_encoding = encoding
             .into_iter()
@@ -188,15 +183,15 @@ where
     }
 }
 
-impl<D, M> SentenceDecoder for CategoricalEncoder<D, D::Encoding, M>
+impl<D, M, L> SentenceDecoder<L> for CategoricalEncoder<D, D::Encoding, M>
 where
-    D: SentenceDecoder,
+    D: SentenceDecoder<L>,
     D::Encoding: Clone + Eq + Hash,
     M: mutability::Number<D::Encoding>,
 {
     type Encoding = usize;
 
-    fn decode<S>(&self, labels: &[S], sentence: &mut Sentence) -> Result<(), Error>
+    fn decode<S>(&self, labels: &[S], sentence: &mut L) -> Result<(), Error>
     where
         S: AsRef<[EncodingProb<Self::Encoding>]>,
     {
@@ -211,6 +206,7 @@ mod tests {
     use std::io::BufReader;
     use std::path::Path;
 
+    use conllu::graph::Sentence;
     use conllu::io::Reader;
     use numberer::Numberer;
 
@@ -223,7 +219,7 @@ mod tests {
     fn test_encoding<P, E, C>(path: P, encoder_decoder: E)
     where
         P: AsRef<Path>,
-        E: SentenceEncoder<Encoding = C> + SentenceDecoder<Encoding = C>,
+        E: SentenceEncoder<Sentence, Encoding = C> + SentenceDecoder<Sentence, Encoding = C>,
         C: 'static + Clone,
     {
         let f = File::open(path).unwrap();

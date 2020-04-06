@@ -188,7 +188,7 @@ impl RelativePOSEncoder {
     }
 }
 
-impl SentenceEncoder for RelativePOSEncoder {
+impl SentenceEncoder<Sentence> for RelativePOSEncoder {
     type Encoding = DependencyEncoding<RelativePOS>;
 
     fn encode(&self, sentence: &Sentence) -> Result<Vec<Self::Encoding>, Error> {
@@ -235,7 +235,7 @@ impl SentenceEncoder for RelativePOSEncoder {
     }
 }
 
-impl SentenceDecoder for RelativePOSEncoder {
+impl SentenceDecoder<Sentence> for RelativePOSEncoder {
     type Encoding = DependencyEncoding<RelativePOS>;
 
     fn decode<S>(&self, labels: &[S], sentence: &mut Sentence) -> Result<(), Error>

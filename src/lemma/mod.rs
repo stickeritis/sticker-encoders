@@ -1,9 +1,19 @@
-use conllu::graph::{Node, Sentence};
 use edit_tree::{Apply, EditTree};
 use failure::{Error, Fail};
 use serde::{Deserialize, Serialize};
 
 use super::{EncodingProb, SentenceDecoder, SentenceEncoder};
+
+#[allow(clippy::len_without_is_empty)]
+pub trait Lemmas {
+    fn form(&self, idx: usize) -> &str;
+
+    fn lemma(&self, idx: usize) -> Option<&str>;
+
+    fn len(&self) -> usize;
+
+    fn set_lemma(&mut self, idx: usize, lemma: impl Into<String>);
+}
 
 /// Lemma encoding error.
 #[derive(Clone, Debug, Eq, Fail, PartialEq)]
@@ -39,10 +49,13 @@ impl EditTreeEncoder {
     }
 }
 
-impl SentenceDecoder for EditTreeEncoder {
+impl<L> SentenceDecoder<L> for EditTreeEncoder
+where
+    L: Lemmas,
+{
     type Encoding = EditTree<char>;
 
-    fn decode<S>(&self, labels: &[S], sentence: &mut Sentence) -> Result<(), Error>
+    fn decode<S>(&self, labels: &[S], sentence: &mut L) -> Result<(), Error>
     where
         S: AsRef<[EncodingProb<Self::Encoding>]>,
     {
@@ -52,24 +65,20 @@ impl SentenceDecoder for EditTreeEncoder {
             "Labels and sentence length mismatch"
         );
 
-        for (token, token_labels) in sentence
-            .iter_mut()
-            .filter_map(Node::token_mut)
-            .zip(labels.iter())
-        {
+        for (idx, token_labels) in labels.iter().enumerate() {
             if let Some(label) = token_labels.as_ref().get(0) {
-                let form = token.form().chars().collect::<Vec<_>>();
+                let form = sentence.form(idx + 1).chars().collect::<Vec<_>>();
 
                 if let Some(lemma) = label.encoding().apply(&form) {
                     // If the edit script can be applied, use the
                     // resulting lemma...
                     let lemma = lemma.into_iter().collect::<String>();
-                    token.set_lemma(Some(lemma));
+                    sentence.set_lemma(idx + 1, lemma);
                 } else if let BackoffStrategy::Form = self.backoff_strategy {
                     // .. if the edit script failed and the back-off
                     // strategy is to set the form as the lemma,
                     // do so.
-                    token.set_lemma(Some(token.form().to_owned()));
+                    sentence.set_lemma(idx + 1, sentence.form(idx + 1).to_owned());
                 }
             }
         }
@@ -78,28 +87,32 @@ impl SentenceDecoder for EditTreeEncoder {
     }
 }
 
-impl SentenceEncoder for EditTreeEncoder {
+impl<L> SentenceEncoder<L> for EditTreeEncoder
+where
+    L: Lemmas,
+{
     type Encoding = EditTree<char>;
 
-    fn encode(&self, sentence: &Sentence) -> Result<Vec<Self::Encoding>, Error> {
+    fn encode(&self, sentence: &L) -> Result<Vec<Self::Encoding>, Error> {
         let mut encoding = Vec::with_capacity(sentence.len() - 1);
 
-        for token in sentence.iter().filter_map(Node::token) {
-            let lemma = token
-                .lemma()
+        for idx in 1..sentence.len() {
+            let form = sentence.form(idx);
+            let lemma = sentence
+                .lemma(idx)
                 .or_else(|| {
-                    if token.form() == "_" {
+                    if form == "_" {
                         Some("_").to_owned()
                     } else {
                         None
                     }
                 })
                 .ok_or_else(|| EncodeError::MissingLemma {
-                    form: token.form().to_owned(),
+                    form: form.to_owned(),
                 })?;
 
             let edit_tree = EditTree::create_tree(
-                &token.form().chars().collect::<Vec<_>>(),
+                &form.chars().collect::<Vec<_>>(),
                 &lemma.chars().collect::<Vec<_>>(),
             );
 
@@ -126,7 +139,7 @@ mod tests {
         sent: &Sentence,
     ) -> Vec<Vec<EncodingProb<EditTree<char>>>> {
         encoder
-            .encode(&sent)
+            .encode(sent)
             .unwrap()
             .into_iter()
             .map(|encoding| vec![EncodingProb::new(encoding, 1.0)])

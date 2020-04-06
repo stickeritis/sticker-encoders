@@ -61,7 +61,7 @@ impl RelativePositionEncoder {
     }
 }
 
-impl SentenceEncoder for RelativePositionEncoder {
+impl SentenceEncoder<Sentence> for RelativePositionEncoder {
     type Encoding = DependencyEncoding<RelativePosition>;
 
     fn encode(&self, sentence: &Sentence) -> Result<Vec<Self::Encoding>, Error> {
@@ -85,7 +85,7 @@ impl SentenceEncoder for RelativePositionEncoder {
     }
 }
 
-impl SentenceDecoder for RelativePositionEncoder {
+impl SentenceDecoder<Sentence> for RelativePositionEncoder {
     type Encoding = DependencyEncoding<RelativePosition>;
 
     fn decode<S>(&self, labels: &[S], sentence: &mut Sentence) -> Result<(), Error>

@@ -1,9 +1,10 @@
 //! Label encoders.
 
-use conllu::graph::Sentence;
 use failure::Error;
 
 pub mod categorical;
+
+pub mod compat;
 
 pub mod deprel;
 
@@ -53,10 +54,10 @@ where
 ///
 /// A sentence decoder adds a representation to each token in a
 /// sentence, such as a part-of-speech tag or a topological field.
-pub trait SentenceDecoder {
+pub trait SentenceDecoder<L> {
     type Encoding: ToOwned;
 
-    fn decode<S>(&self, labels: &[S], sentence: &mut Sentence) -> Result<(), Error>
+    fn decode<S>(&self, labels: &[S], sentence: &mut L) -> Result<(), Error>
     where
         S: AsRef<[EncodingProb<Self::Encoding>]>;
 }
@@ -65,9 +66,9 @@ pub trait SentenceDecoder {
 ///
 /// A sentence encoder extracts a representation of each token in a
 /// sentence, such as a part-of-speech tag or a topological field.
-pub trait SentenceEncoder {
+pub trait SentenceEncoder<L> {
     type Encoding;
 
     /// Encode the given sentence.
-    fn encode(&self, sentence: &Sentence) -> Result<Vec<Self::Encoding>, Error>;
+    fn encode(&self, sentence: &L) -> Result<Vec<Self::Encoding>, Error>;
 }

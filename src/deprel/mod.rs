@@ -71,7 +71,7 @@ mod tests {
     fn test_encoding<P, E, C>(path: P, encoder_decoder: E)
     where
         P: AsRef<Path>,
-        E: SentenceEncoder<Encoding = C> + SentenceDecoder<Encoding = C>,
+        E: SentenceEncoder<Sentence, Encoding = C> + SentenceDecoder<Sentence, Encoding = C>,
         C: 'static + Clone,
     {
         let f = File::open(path).unwrap();
