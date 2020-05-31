@@ -1,3 +1,11 @@
+// Implementation note:
+//
+// We currently do a binary search to find the position of the token
+// in the POS table. This makes encoding/decoding of a sentence
+// *O(n log(n))*. We could do this in *O(n)* by keeping track of
+// the position of the token the head POS table while constructing
+// the POS table. This currently does not really seem worth it?
+
 use std::convert::Infallible;
 
 use std::collections::HashMap;
