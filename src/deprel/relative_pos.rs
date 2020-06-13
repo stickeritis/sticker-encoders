@@ -10,13 +10,14 @@ use std::convert::Infallible;
 
 use std::collections::HashMap;
 
-use conllu::graph::{DepTriple, Node, Sentence};
+use conllu::graph::{DepTriple, Node};
 use conllu::token::Token;
 use serde_derive::{Deserialize, Serialize};
 
 use super::{
     attach_orphans, break_cycles, find_or_create_root, DecodeError, DependencyEncoding, EncodeError,
 };
+use crate::traits::Sentence;
 use crate::{EncodingProb, SentenceDecoder, SentenceEncoder};
 
 const ROOT_POS: &str = "ROOT";
@@ -177,7 +178,10 @@ impl RelativePOSEncoder {
         Ok(indices[head_position as usize])
     }
 
-    pub(crate) fn pos_position_table(&self, sentence: &Sentence) -> HashMap<String, Vec<usize>> {
+    pub(crate) fn pos_position_table(
+        &self,
+        sentence: &impl Sentence,
+    ) -> HashMap<String, Vec<usize>> {
         let mut table = HashMap::new();
 
         for (idx, node) in sentence.iter().enumerate() {
@@ -202,7 +206,7 @@ impl SentenceEncoder for RelativePOSEncoder {
 
     type Error = EncodeError;
 
-    fn encode(&self, sentence: &Sentence) -> Result<Vec<Self::Encoding>, Self::Error> {
+    fn encode(&self, sentence: &impl Sentence) -> Result<Vec<Self::Encoding>, Self::Error> {
         let pos_table = self.pos_position_table(&sentence);
 
         let mut encoded = Vec::with_capacity(sentence.len());
@@ -251,7 +255,7 @@ impl SentenceDecoder for RelativePOSEncoder {
 
     type Error = Infallible;
 
-    fn decode<S>(&self, labels: &[S], sentence: &mut Sentence) -> Result<(), Self::Error>
+    fn decode<S>(&self, labels: &[S], sentence: &mut impl Sentence) -> Result<(), Self::Error>
     where
         S: AsRef<[EncodingProb<Self::Encoding>]>,
     {

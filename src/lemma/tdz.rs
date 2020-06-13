@@ -1,4 +1,3 @@
-use conllu::graph::Sentence;
 use lazy_static::lazy_static;
 use ohnomore::transform::delemmatization::{
     RemoveAlternatives, RemoveReflexiveTag, RemoveSepVerbPrefix, RemoveTruncMarker,
@@ -13,6 +12,7 @@ use ohnomore::transform::Transforms;
 use serde::{Deserialize, Serialize};
 
 use crate::lemma::{BackoffStrategy, EditTreeEncoder};
+use crate::traits::Sentence;
 use crate::{EncodingProb, SentenceDecoder, SentenceEncoder};
 
 lazy_static! {
@@ -78,7 +78,7 @@ impl SentenceDecoder for TdzLemmaEncoder {
 
     type Error = <EditTreeEncoder as SentenceDecoder>::Error;
 
-    fn decode<S>(&self, labels: &[S], sentence: &mut Sentence) -> Result<(), Self::Error>
+    fn decode<S>(&self, labels: &[S], sentence: &mut impl Sentence) -> Result<(), Self::Error>
     where
         S: AsRef<[EncodingProb<Self::Encoding>]>,
     {
@@ -97,7 +97,7 @@ impl SentenceEncoder for TdzLemmaEncoder {
 
     type Error = <EditTreeEncoder as SentenceEncoder>::Error;
 
-    fn encode(&self, sentence: &Sentence) -> Result<Vec<Self::Encoding>, Self::Error> {
+    fn encode(&self, sentence: &impl Sentence) -> Result<Vec<Self::Encoding>, Self::Error> {
         // Hmpf, but we need to modify the sentence in-place.
         let mut sentence = sentence.clone();
 

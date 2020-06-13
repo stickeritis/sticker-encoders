@@ -1,10 +1,11 @@
 use std::convert::Infallible;
 
-use conllu::graph::{Node, Sentence};
+use conllu::graph::Node;
 use edit_tree::{Apply, EditTree};
 use serde::{Deserialize, Serialize};
 
 use crate::lemma::EncodeError;
+use crate::traits::Sentence;
 use crate::{EncodingProb, SentenceDecoder, SentenceEncoder};
 
 /// Back-off strategy.
@@ -38,7 +39,7 @@ impl SentenceDecoder for EditTreeEncoder {
 
     type Error = Infallible;
 
-    fn decode<S>(&self, labels: &[S], sentence: &mut Sentence) -> Result<(), Self::Error>
+    fn decode<S>(&self, labels: &[S], sentence: &mut impl Sentence) -> Result<(), Self::Error>
     where
         S: AsRef<[EncodingProb<Self::Encoding>]>,
     {
@@ -79,7 +80,7 @@ impl SentenceEncoder for EditTreeEncoder {
 
     type Error = EncodeError;
 
-    fn encode(&self, sentence: &Sentence) -> Result<Vec<Self::Encoding>, Self::Error> {
+    fn encode(&self, sentence: &impl Sentence) -> Result<Vec<Self::Encoding>, Self::Error> {
         let mut encoding = Vec::with_capacity(sentence.len() - 1);
 
         for token in sentence.iter().filter_map(Node::token) {

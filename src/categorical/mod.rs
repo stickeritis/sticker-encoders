@@ -1,10 +1,10 @@
 use std::hash::Hash;
 use std::marker::PhantomData;
 
-use conllu::graph::Sentence;
 use numberer::Numberer;
 use serde_derive::{Deserialize, Serialize};
 
+use crate::traits::Sentence;
 use crate::{EncodingProb, SentenceDecoder, SentenceEncoder};
 
 mod mutability {
@@ -176,7 +176,7 @@ where
 
     type Error = E::Error;
 
-    fn encode(&self, sentence: &Sentence) -> Result<Vec<Self::Encoding>, Self::Error> {
+    fn encode(&self, sentence: &impl Sentence) -> Result<Vec<Self::Encoding>, Self::Error> {
         let encoding = self.inner.encode(sentence)?;
         let categorical_encoding = encoding
             .into_iter()
@@ -196,7 +196,7 @@ where
 
     type Error = D::Error;
 
-    fn decode<S>(&self, labels: &[S], sentence: &mut Sentence) -> Result<(), Self::Error>
+    fn decode<S>(&self, labels: &[S], sentence: &mut impl Sentence) -> Result<(), Self::Error>
     where
         S: AsRef<[EncodingProb<Self::Encoding>]>,
     {

@@ -2,7 +2,7 @@
 
 use std::error::Error;
 
-use conllu::graph::Sentence;
+//use conllu::graph::Sentence;
 
 pub mod categorical;
 
@@ -11,6 +11,10 @@ pub mod deprel;
 pub mod layer;
 
 pub mod lemma;
+
+pub mod traits;
+
+use traits::Sentence;
 
 /// An encoding with its probability.
 #[derive(Debug)]
@@ -60,7 +64,7 @@ pub trait SentenceDecoder {
     /// The decoding error type.
     type Error: Error;
 
-    fn decode<S>(&self, labels: &[S], sentence: &mut Sentence) -> Result<(), Self::Error>
+    fn decode<S>(&self, labels: &[S], sentence: &mut impl Sentence) -> Result<(), Self::Error>
     where
         S: AsRef<[EncodingProb<Self::Encoding>]>;
 }
@@ -76,5 +80,5 @@ pub trait SentenceEncoder {
     type Error: Error;
 
     /// Encode the given sentence.
-    fn encode(&self, sentence: &Sentence) -> Result<Vec<Self::Encoding>, Self::Error>;
+    fn encode(&self, sentence: &impl Sentence) -> Result<Vec<Self::Encoding>, Self::Error>;
 }

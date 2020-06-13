@@ -1,11 +1,12 @@
 use std::convert::Infallible;
 
-use conllu::graph::{DepTriple, Sentence};
+use conllu::graph::DepTriple;
 use serde_derive::{Deserialize, Serialize};
 
 use super::{
     attach_orphans, break_cycles, find_or_create_root, DecodeError, DependencyEncoding, EncodeError,
 };
+use crate::traits::Sentence;
 use crate::{EncodingProb, SentenceDecoder, SentenceEncoder};
 
 /// Relative head position.
@@ -67,7 +68,7 @@ impl SentenceEncoder for RelativePositionEncoder {
 
     type Error = EncodeError;
 
-    fn encode(&self, sentence: &Sentence) -> Result<Vec<Self::Encoding>, Self::Error> {
+    fn encode(&self, sentence: &impl Sentence) -> Result<Vec<Self::Encoding>, Self::Error> {
         let mut encoded = Vec::with_capacity(sentence.len());
         for idx in 1..sentence.len() {
             let triple = sentence
@@ -93,7 +94,7 @@ impl SentenceDecoder for RelativePositionEncoder {
 
     type Error = Infallible;
 
-    fn decode<S>(&self, labels: &[S], sentence: &mut Sentence) -> Result<(), Self::Error>
+    fn decode<S>(&self, labels: &[S], sentence: &mut impl Sentence) -> Result<(), Self::Error>
     where
         S: AsRef<[EncodingProb<Self::Encoding>]>,
     {

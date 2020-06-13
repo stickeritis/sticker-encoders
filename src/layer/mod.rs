@@ -2,11 +2,12 @@
 
 use std::convert::{Infallible, TryFrom};
 
-use conllu::graph::{Node, Sentence};
+use conllu::graph::Node;
 use conllu::token::{Features, Token};
 use serde_derive::{Deserialize, Serialize};
 
 use super::{EncodingProb, SentenceDecoder, SentenceEncoder};
+use crate::traits::Sentence;
 
 mod error;
 use self::error::*;
@@ -128,7 +129,7 @@ impl SentenceDecoder for LayerEncoder {
 
     type Error = Infallible;
 
-    fn decode<S>(&self, labels: &[S], sentence: &mut Sentence) -> Result<(), Self::Error>
+    fn decode<S>(&self, labels: &[S], sentence: &mut impl Sentence) -> Result<(), Self::Error>
     where
         S: AsRef<[EncodingProb<Self::Encoding>]>,
     {
@@ -157,7 +158,7 @@ impl SentenceEncoder for LayerEncoder {
 
     type Error = EncodeError;
 
-    fn encode(&self, sentence: &Sentence) -> Result<Vec<Self::Encoding>, Self::Error> {
+    fn encode(&self, sentence: &impl Sentence) -> Result<Vec<Self::Encoding>, Self::Error> {
         let mut encoding = Vec::with_capacity(sentence.len() - 1);
         for token in sentence.iter().filter_map(Node::token) {
             let label = token
